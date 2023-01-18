@@ -5,8 +5,8 @@ while [ $Test != "Succeeded" ] && [ $Test != "Failed" ] || [ $Count -le 3 ]
     echo $Count
     if [ $Count -eq 2 ]
     then
-    export Test="Succeeded"
+    declare Test="Succeeded"
     fi
-    export COUNT=$((COUNT+1))
+    declare COUNT=$((COUNT+1))
     sleep 5
   done
