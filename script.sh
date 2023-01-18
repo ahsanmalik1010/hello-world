@@ -5,7 +5,6 @@ while [ $Test != "Succeeded" ] && [ $Test != "Failed" ] || [ $Count -le 3 ]
     if [ $Count -eq 2 ]
     then
     export Test="Succeeded"
-    $(echo$client)
     fi
     export COUNT=$((COUNT+1))
     sleep 5
