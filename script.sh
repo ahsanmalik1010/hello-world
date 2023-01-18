@@ -1,4 +1,4 @@
-source <<EOF
+#!/bin/bash
 while [ $Test != "Succeeded" ] && [ $Test != "Failed" ] || [ $Count -le 3 ]
   do
     echo $Test
@@ -10,4 +10,3 @@ while [ $Test != "Succeeded" ] && [ $Test != "Failed" ] || [ $Count -le 3 ]
     export COUNT=$((COUNT+1))
     sleep 5
   done
-EOF
