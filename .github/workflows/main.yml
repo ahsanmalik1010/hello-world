@@ -9,4 +9,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Print hello
-        run: echo "hello"
+        run: git clone --mirror https://github.com/openembedded/meta-openembedded
