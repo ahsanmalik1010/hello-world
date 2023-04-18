@@ -9,4 +9,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Print hello
-        run: git clone --mirror https://github.com/openembedded/meta-openembedded
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+          repository: https://github.com/openembedded/meta-openembedded
+          mirror: true
