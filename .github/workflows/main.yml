@@ -55,12 +55,9 @@ jobs:
                   echo lambda name: $lambda_name
                   camel_case=$(echo "$lambda_name" | sed -E 's/-lambda//')
                   echo camel case: $camel_case
-                  camel_case=$(echo "$camel_case" | sed 's/-\([a-z]\)/\u\1/g')
-                  echo camel case2: $camel_case
-                  # Remove hyphens
-                  camel_case=${camel_case//-/}
-                  echo camel case3: $camel_case
-                  function_name="iot-api${camel_case}Endpoints"
+                  capitalized="${camel_case^}"
+                  echo "$capitalized"
+                  function_name="iot-api${capitalized}Endpoints"
                   echo function name: $function_name
                   MODIFIED_LAMBDAS+=("$function_name")
               fi
