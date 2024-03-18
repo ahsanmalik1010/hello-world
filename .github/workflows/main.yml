@@ -1,16 +1,82 @@
-name: Cron Job
+name: Deploy Changed Lambda Functions
 
 on:
-  schedule:
-    - cron: '*/5 * * * *'
+  push:
+    branches:
+      - dev
+
+env:
+  AWS_REGION: us-east-2
 
 jobs:
-  print_hello:
+  deploy-lambdas:
     runs-on: ubuntu-latest
     steps:
-      - name: Print hello
-        uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          repository: https://github.com/openembedded/meta-openembedded
-          mirror: true
+
+      # - name: Configure AWS credentials
+      #   uses: aws-actions/configure-aws-credentials@v4
+      #   with:
+      #     aws-access-key-id: ${{ secrets.AWS_DEV_ACCESS_KEY_ID }}
+      #     aws-secret-access-key: ${{ secrets.AWS_DEV_SECRET_ACCESS_KEY }}
+      #     aws-region: ${{ env.AWS_REGION }}
+
+      - name: Find modified Lambda directories
+        id: find-lambda-dirs
+        run: |
+          # Get list of directories containing Lambda code
+          LAMBDA_DIRS=$(find . -maxdepth 1 -type d -name "*-lambda")
+          
+          # Define an array to store the names of modified Lambda functions
+          MODIFIED_LAMBDAS=()
+
+          # Get previous commit hash
+          PREVIOUS_COMMIT=$(git log --format="%H" -n 2 | tail -n 1)
+          echo previous commit: $PREVIOUS_COMMIT
+
+          # Get current commit hash
+          CURRENT_COMMIT=$(git log --format="%H" -n 1)
+          echo current commit: $CURRENT_COMMIT
+
+          # Get list of changed files
+          CHANGED_FILES=$(git diff --name-only $PREVIOUS_COMMIT $CURRENT_COMMIT)
+          echo changed files: $CHANGED_FILES
+
+          # Loop through each changed file
+          for changed_file in $CHANGED_FILES; do
+              changed_dir=$(dirname "$changed_file")
+              if [[ "$changed_dir" == */*-lambda ]]; then
+                  echo changed dir: $changed_dir
+                  lambda_name=$(basename "$changed_dir")
+                  echo lambda name: $lambda_name
+                  camel_case=$(echo "$lambda_name" | sed -E 's/-lambda//')
+                  echo camel case: $camel_case
+                  camel_case=$(echo "$camel_case" | sed 's/-\([a-z]\)/\u\1/g')
+                  echo camel case2: $camel_case
+                  # Remove hyphens
+                  camel_case=${camel_case//-/}
+                  echo camel case3: $camel_case
+                  function_name="iot-api${camel_case}Endpoints"
+                  echo function name: $function_name
+                  MODIFIED_LAMBDAS+=("$function_name")
+              fi
+          done
+
+          # Output the list of modified Lambda directories
+          echo "${MODIFIED_LAMBDAS[@]}"
+
+          # Output the list of modified Lambda directories
+          echo "modified_lambda_dirs=${MODIFIED_LAMBDAS[*]}" >> $GITHUB_OUTPUT
+
+      # - name: Deploy Lambda functions
+      #   run: |
+      #     # Get the list of modified Lambda directories from the previous step
+      #     MODIFIED_LAMBDA_DIRS="${{ steps.find-lambda-dirs.outputs.modified_lambda_dirs }}"
+
+      #     # Loop through each modified Lambda directory and deploy its code
+      #     for lambda_name in $MODIFIED_LAMBDA_DIRS; do
+      #         aws lambda update-function-code --function-name $lambda_name --zip-file fileb://$lambda_name.zip
+      #     done
