@@ -48,6 +48,7 @@ jobs:
           # Loop through each changed file
           for changed_file in $CHANGED_FILES; do
               changed_dir=$(dirname "$changed_file")
+              echo changed dir: $changed_dir
               if [[ "$changed_dir" == */*-lambda ]]; then
                   echo changed dir: $changed_dir
                   lambda_name=$(basename "$changed_dir")
