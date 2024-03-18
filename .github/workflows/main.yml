@@ -43,19 +43,20 @@ jobs:
 
           # Get list of changed files
           CHANGED_FILES=$(git diff --name-only $PREVIOUS_COMMIT $CURRENT_COMMIT)
-          echo CHANGED_FILES: $CHANGED_FILES
+          echo changed files: $CHANGED_FILES
 
           # Loop through each changed file
           for changed_file in $CHANGED_FILES; do
               changed_dir=$(dirname "$changed_file")
-              echo changed_dir: $changed_dir
+              echo changed dir: $changed_dir
               if [[ "$changed_dir" == *-lambda ]]; then
-                  echo changed_dir (inside if): $changed_dir
+                  echo changed dir: $changed_dir
                   lambda_name=$(basename "$changed_dir")
-                  echo lambda_name: $lambda_name
-                  remove_postfix=$(echo "$lambda_name" | sed -E 's/-lambda//')
-                  capitalized="${remove_postfix^}"
-                  echo capitalized: $capitalized
+                  echo lambda name: $lambda_name
+                  camel_case=$(echo "$lambda_name" | sed -E 's/-lambda//')
+                  echo camel case: $camel_case
+                  capitalized="${camel_case^}"
+                  echo "$capitalized"
                   function_name="iot-api${capitalized}Endpoints"
                   echo function name: $function_name
                   MODIFIED_LAMBDAS+=("$function_name")
