@@ -70,7 +70,7 @@ jobs:
 
           # Output the list of modified Lambda directories
           echo "modified_lambda_dirs=${MODIFIED_LAMBDAS[*]}" >> $GITHUB_OUTPUT
-  #test
+  
       # - name: Deploy Lambda functions
       #   run: |
       #     # Get the list of modified Lambda directories from the previous step
