@@ -37,7 +37,7 @@ jobs:
                   echo changed_dir: $changed_dir
                   lambda_dir=$(basename "$changed_dir")
                   echo lambda_dir: $lambda_dir
-                  lambda_name=$(echo "$lambda_dir" | sed -E 's/-lambda//')
+                  lambda_name=$(echo "$lambda_dir" | sed -E 's/_lambda//')
                   echo lambda_name: $lambda_name
                   # Capitalize the first letter of lambda_name
                   capitalized="${lambda_name^}"
