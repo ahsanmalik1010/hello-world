@@ -32,10 +32,16 @@ jobs:
           # Loop through each changed file
           for changed_file in $CHANGED_FILES; do
               if [[ "$changed_file" == *"_lambda/"* ]]; then
+                  echo changed_file: $changed_file
                   changed_dir=$(dirname "$changed_file")
-                  lambda_name=$(basename "$changed_dir" | sed -E 's/-lambda//')
+                  echo changed_dir: $changed_dir
+                  lambda_dir=$(basename "$changed_dir")
+                  echo lambda_dir: $lambda_dir
+                  lambda_name=$(echo "$lambda_dir" | sed -E 's/-lambda//')
+                  echo lambda_name: $lambda_name
                   # Capitalize the first letter of lambda_name
                   capitalized="${lambda_name^}"
+                  echo capitalized: $capitalized
                   function_name="iot-api${capitalized}Endpoints"
                   # Map the directory to the function name
                   LAMBDA_MAP[$function_name]="$changed_dir"
