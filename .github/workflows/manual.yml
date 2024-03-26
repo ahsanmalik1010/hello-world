@@ -22,7 +22,7 @@ jobs:
 
       - name: Find and Deploy Modified Lambda Functions
         env:
-          CHANGED_FILES: "inverters-lambda/inverters_lambda/lambda_function.py,sites-lambda/sites_lambda/lambda_function.py"
+          CHANGED_FILES: "inverters-lambda/inverters_lambda/lambda_function.py sites-lambda/sites_lambda/lambda_function.py"
         run: |
           # Enable associative array in Bash
           declare -A LAMBDA_MAP
