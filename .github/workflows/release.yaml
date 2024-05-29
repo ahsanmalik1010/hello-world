@@ -1,0 +1,125 @@
+name: Lint, Build and Publish (Prod)
+
+on:
+  pull_request:
+    branches:
+      - release/*
+    types:
+      - opened
+      - synchronize
+      - closed
+
+env:
+  AWS_REGION: us-east-2
+
+jobs:
+  lint:
+    if: |
+      github.event_name == 'pull_request' && 
+      (github.event.action == 'opened' || github.event.action == 'synchronize') || github.event.action == 'closed') && 
+      startsWith(github.head_ref, 'story/') && 
+      startsWith(github.base_ref, 'release/')
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Venv
+        run: |
+          cd python
+          python -m pip install --upgrade pip
+          pip install poetry==1.5.1
+          poetry config virtualenvs.in-project true
+          poetry config virtualenvs.path .
+          #Setup AWS Connection
+          export CODEARTIFACT_AUTH_TOKEN=`aws codeartifact get-authorization-token --domain epc-power-us --domain-owner ${{ secrets.AWS_ACCOUNT_ID }} --query authorizationToken --output text`
+          poetry config repositories.epc-power https://epc-power-us-${{ secrets.AWS_ACCOUNT_ID }}.d.codeartifact.us-east-2.amazonaws.com/pypi/epc-power/
+          poetry config http-basic.epc-power aws $CODEARTIFACT_AUTH_TOKEN
+          
+          poetry self add "poetry-dynamic-versioning[plugin]"
+          poetry install
+      - name: Analyze code
+        run: |
+          cd python
+          poetry run black --check --diff .
+          poetry run pylint_runner
+  build:
+    needs: lint
+    runs-on: ubuntu-22.04
+    if: |
+      github.event_name == 'pull_request' && 
+      (github.event.action == 'opened' || github.event.action == 'synchronize' || github.event.action == 'closed') && 
+      startsWith(github.head_ref, 'story/') && 
+      startsWith(github.base_ref, 'release/')
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID  }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Venv
+        run: |
+          cd python
+          python -m pip install --upgrade pip
+          pip install poetry==1.5.1
+          poetry config virtualenvs.in-project true
+          poetry config virtualenvs.path .
+          #Setup AWS Connection
+          export CODEARTIFACT_AUTH_TOKEN=`aws codeartifact get-authorization-token --domain epc-power-us --domain-owner ${{ secrets.AWS_ACCOUNT_ID }} --query authorizationToken --output text`
+          poetry config repositories.epc-power https://epc-power-us-${{ secrets.AWS_ACCOUNT_ID }}.d.codeartifact.us-east-2.amazonaws.com/pypi/epc-power/
+          poetry config http-basic.epc-power aws $CODEARTIFACT_AUTH_TOKEN
+          
+          poetry self add "poetry-dynamic-versioning[plugin]"
+          poetry install
+      - name: Determine Package Name
+        id: package-name
+        run: |
+          VERSION=$(poetry version -s)
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          COMMIT_COUNT=$(git rev-list --count HEAD)
+          if [[ ${{ github.event.action }} == 'opened' ]]; then
+            PACKAGE_VERSION="${VERSION}dev${PR_NUMBER}.0"
+          elif [[ ${{ github.event.action }} == 'synchronize' ]]; then
+            PACKAGE_VERSION="${VERSION}dev${PR_NUMBER}.${COMMIT_COUNT}"
+          elif [[ ${{ github.event.action }} == 'closed' && ${{ github.event.pull_request.merged }} == true ]]; then
+            PACKAGE_VERSION="${VERSION}rc${PR_NUMBER}"
+            echo "RELEASE_CANDIDATE=true" >> $GITHUB_ENV
+          fi
+          echo "PACKAGE_VERSION=$PACKAGE_VERSION" >> $GITHUB_ENV
+          echo "PACKAGE_NAME=$(poetry version -n)-${PACKAGE_VERSION}-py3-none-any.whl" >> $GITHUB_ENV
+      - name: Publish executable
+        run: |
+          cd python
+          poetry build
+          poetry publish --repository epc-power -n $(cat $GITHUB_ENV | grep PACKAGE_NAME | cut -d '=' -f 2)
+      - name: Create RC tag
+        run: |
+          git config --global user.name 'github-actions'
+          git config --global user.email 'github-actions@github.com'
+          TAG_NAME="v${{ steps.package-name.outputs.VERSION }}-RC${{ github.event.pull_request.number }}"
+          git tag $TAG_NAME
+          git push origin $TAG_NAME
