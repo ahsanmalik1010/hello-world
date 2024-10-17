@@ -3,7 +3,7 @@ name: Deploy Changed Lambda Functions
 on:
   push:
     branches:
-      - dev
+      - dev 
 
 env:
   AWS_REGION: us-east-2
