@@ -1,24 +1,16 @@
 name: Lint, Build and Publish (Prod)
 
 on:
-  pull_request:
-    branches:
-      - release/*
-    types:
-      - opened
-      - synchronize
-      - closed
+  push:
+    tags:
+      - "v*"
 
 env:
   AWS_REGION: us-east-2
 
 jobs:
   lint:
-    if: |
-      github.event_name == 'pull_request' && 
-      (github.event.action == 'opened' || github.event.action == 'synchronize' || github.event.action == 'closed') && 
-      startsWith(github.head_ref, 'story/') && 
-      startsWith(github.base_ref, 'release/')
+    if: github.base_ref == 'refs/heads/main'
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
