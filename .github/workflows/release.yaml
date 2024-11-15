@@ -10,7 +10,7 @@ env:
 
 jobs:
   lint:
-    if: github.base_ref == 'refs/heads/main'
+    if: github.base_ref == 'refs/heads/master'
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
