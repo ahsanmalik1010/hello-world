@@ -30,10 +30,10 @@ jobs:
           echo "branch_name=$BRANCH_NAME"
           
           if [ "$BRANCH_NAME" = "origin/master" ]; then
-            echo "::set-output name=is_main_tag::true"
+            echo "is_main_tag=true" >> $GITHUB_OUTPUT
             echo "branch is master"
           else
-            echo "::set-output name=is_main_tag::false"
+            echo "is_main_tag=false" >> $GITHUB_OUTPUT
             echo "branch is not master"
           fi
 
@@ -48,3 +48,4 @@ jobs:
 
       - name: Lint
         run: echo "Running linting for the tag on the master branch."
+  
