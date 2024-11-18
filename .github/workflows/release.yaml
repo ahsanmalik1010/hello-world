@@ -27,12 +27,11 @@ jobs:
           echo "branch_name=$BRANCH_NAME"
           if [ "$BRANCH_NAME" = "origin/master" ]; then
             echo "::set-output name=is_main_tag::true"
+            echo "branch is master"
           else
             echo "::set-output name=is_main_tag::false"
+            echo "branch is not master"
           fi
-          
-      - name: Print all environment variables
-        run: env
 
   lint:
     runs-on: ubuntu-22.04
