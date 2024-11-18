@@ -30,10 +30,10 @@ jobs:
           echo "branch_name=$BRANCH_NAME"
           
           if [ "$BRANCH_NAME" = "origin/master" ]; then
-            echo "{is_main_tag}={true}" >> $GITHUB_OUTPUT
+            echo "is_main_tag=true" >> $GITHUB_OUTPUT
             echo "branch is master"
           else
-            echo "{is_main_tag}={false}" >> $GITHUB_OUTPUT
+            echo "is_main_tag=false" >> $GITHUB_OUTPUT
             echo "branch is not master"
           fi
 
