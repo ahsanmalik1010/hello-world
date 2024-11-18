@@ -1,0 +1,47 @@
+name: Lint, Build and Publish (Prod)
+
+on:
+  push:
+    tags:
+      - "v*"
+
+env:
+  AWS_REGION: us-east-2
+
+jobs:
+  check-branch:
+    runs-on: ubuntu-22.04
+    outputs:
+      is_main_tag: ${{ steps.check_branch.outputs.is_main_tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine if the tag is on the main branch
+        id: check_branch
+        run: |
+          TAG_NAME=$(echo "${GITHUB_REF##*/}")
+          echo "tag_name=$TAG_NAME"
+          BRANCH_NAME=$(git branch -r --contains "tags/$TAG_NAME" | grep "origin/master" || echo "")
+          echo "branch_name=$BRANCH_NAME"
+          if [ "$BRANCH_NAME" = "origin/master" ]; then
+            echo "::set-output name=is_main_tag::true"
+          else
+            echo "::set-output name=is_main_tag::false"
+          fi
+          
+      - name: Print all environment variables
+        run: env
+
+  lint:
+    runs-on: ubuntu-22.04
+    needs: check-branch
+    if: needs.check-branch.outputs.is_main_tag == 'true'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Lint
+        run: echo "Running linting for the tag on the master branch."
