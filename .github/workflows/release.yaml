@@ -40,7 +40,7 @@ jobs:
   lint:
     runs-on: ubuntu-22.04
     needs: check-branch
-    if: needs.check-branch.outputs.is_main_tag == 'true'
+    if: ${{ needs.check-branch.outputs.is_main_tag == 'true' }}
     steps:
       - uses: actions/checkout@v4
         with:
