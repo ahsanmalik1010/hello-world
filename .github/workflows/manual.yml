@@ -26,36 +26,69 @@ jobs:
         run: |
           # Enable associative array in Bash
           declare -A LAMBDA_MAP
-          
-          # Loop through each changed file
-          for changed_file in $CHANGED_FILES; do
-              if [[ "$changed_file" == *"_lambda/"* ]]; then
-                  echo changed_file: $changed_file
-                  changed_dir=$(dirname "$changed_file")
-                  echo changed_dir: $changed_dir
-                  lambda_dir=$(basename "$changed_dir")
-                  echo lambda_dir: $lambda_dir
-                  lambda_name=$(echo "$lambda_dir" | sed -E 's/_lambda//')
-                  echo lambda_name: $lambda_name
-                  # Capitalize the first letter of lambda_name
-                  capitalized="${lambda_name^}"
-                  echo capitalized: $capitalized
-                  function_name="api${capitalized}Endpoints"
-                  # Map the directory to the function name
-                  LAMBDA_MAP[$function_name]="$changed_dir"
-              fi
+
+          ROOT_DIR="." # Change this if your root directory is elsewhere
+        
+          # Find all directories matching the pattern
+          for lambda_dir in $(find "$ROOT_DIR" -type d -path "*-lambda/*_lambda" -exec test -f "{}/lambda_function.py" \; -print); do
+              echo "Found Lambda directory: $lambda_dir"
+              base_dir=$(basename "$lambda_dir")
+              echo "Base directory name: $base_dir"
+              lambda_name=$(echo "$base_dir" | sed -E 's/_lambda//')
+              echo "Lambda name: $lambda_name"
+              # Capitalize the first letter of the Lambda name
+              capitalized="${lambda_name^}"
+              echo "Capitalized Lambda name: $capitalized"
+              function_name="api${capitalized}Endpoints"
+              # Map the directory to the function name
+              LAMBDA_MAP[$function_name]="$lambda_dir"
           done
-          # Deploy each modified Lambda function
+        
+          # Deploy each Lambda function
           for function_name in "${!LAMBDA_MAP[@]}"; do
               lambda_dir="${LAMBDA_MAP[$function_name]}"
               # Create a zip file for the Lambda function code
-              root_dir=$(dirname "$lambda_dir")
-              echo $root_dir
-              lambda_name=$(basename "$lambda_dir")
-              echo $lambda_name
-              (cd "$root_dir" && zip -r "${function_name}.zip" $lambda_name)
+              parent_dir=$(dirname "$lambda_dir")
+              echo "Parent directory: $parent_dir"
+              lambda_base_name=$(basename "$lambda_dir")
+              echo "Lambda base name: $lambda_base_name"
+              (cd "$parent_dir" && zip -r "${function_name}.zip" "$lambda_base_name")
               # Deploy the Lambda function
               echo "Deploying $function_name from $lambda_dir"
-              # aws lambda update-function-code --function-name "$function_name" --zip-file fileb://"${root_dir}/${function_name}.zip"
+              # Uncomment the following line for actual deployment
+              # aws lambda update-function-code --function-name "$function_name" --zip-file fileb://"${parent_dir}/${function_name}.zip"
               echo "Deployed $function_name from $lambda_dir"
           done
+          
+          # # Loop through each changed file
+          # for changed_file in $CHANGED_FILES; do
+          #     if [[ "$changed_file" == *"_lambda/"* ]]; then
+          #         echo changed_file: $changed_file
+          #         changed_dir=$(dirname "$changed_file")
+          #         echo changed_dir: $changed_dir
+          #         lambda_dir=$(basename "$changed_dir")
+          #         echo lambda_dir: $lambda_dir
+          #         lambda_name=$(echo "$lambda_dir" | sed -E 's/_lambda//')
+          #         echo lambda_name: $lambda_name
+          #         # Capitalize the first letter of lambda_name
+          #         capitalized="${lambda_name^}"
+          #         echo capitalized: $capitalized
+          #         function_name="api${capitalized}Endpoints"
+          #         # Map the directory to the function name
+          #         LAMBDA_MAP[$function_name]="$changed_dir"
+          #     fi
+          # done
+          # # Deploy each modified Lambda function
+          # for function_name in "${!LAMBDA_MAP[@]}"; do
+          #     lambda_dir="${LAMBDA_MAP[$function_name]}"
+          #     # Create a zip file for the Lambda function code
+          #     root_dir=$(dirname "$lambda_dir")
+          #     echo $root_dir
+          #     lambda_name=$(basename "$lambda_dir")
+          #     echo $lambda_name
+          #     (cd "$root_dir" && zip -r "${function_name}.zip" $lambda_name)
+          #     # Deploy the Lambda function
+          #     echo "Deploying $function_name from $lambda_dir"
+          #     # aws lambda update-function-code --function-name "$function_name" --zip-file fileb://"${root_dir}/${function_name}.zip"
+          #     echo "Deployed $function_name from $lambda_dir"
+          # done
