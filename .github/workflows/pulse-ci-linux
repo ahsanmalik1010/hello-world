@@ -1,0 +1,130 @@
+name: CI (Linux)
+
+on:
+  push:
+    branches:
+      - '**'
+    tags:
+      - '**'
+  schedule:
+    - cron: '23 5 * * *'  # Daily at 9:23 PM PST (05:23 UTC)
+
+env:
+  PYTHON_VERSION: '3.10'
+  AWS_REGION: us-east-2
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+          submodules: recursive
+          token: ${{ secrets.CI_PULSE_TOKEN }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Cache ccache
+        uses: actions/cache@v3
+        with:
+          path: ~/.ccache
+          key: ${{ runner.os }}-ccache-${{ hashFiles('**/*.[ch]pp', '**/CMakeLists.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-ccache-
+
+      - name: Check Semantic Versioning
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          # Regex for a semver digit
+          D='0|[1-9][0-9]*'
+          # Regex for a semver pre-release word
+          PW='[0-9]*[a-zA-Z-][0-9a-zA-Z-]*'
+          # Regex for a semver build-metadata word
+          MW='[0-9a-zA-Z-]+'
+
+          echo $GITHUB_REF_NAME
+
+          if [[ "$GITHUB_REF_NAME" =~ ^v($D)\.($D)\.($D)(-(($D|$PW)(\.($D|$PW))*))?(\+($MW(\.$MW)*))?$ ]]; then
+            echo "Valid semantic version detected: ${GITHUB_REF_NAME}"
+            echo "SEMVER_VALID=true" >> "$GITHUB_ENV"
+          else
+            echo "Invalid semantic version: ${GITHUB_REF_NAME}. Skipping tagged steps."
+            echo "SEMVER_VALID=false" >> "$GITHUB_ENV"
+          fi
+
+      - name: SemVer Valid
+        run: echo "SEMVER_VALID=$SEMVER_VALID"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Install build dependencies
+        run: |
+          sudo add-apt-repository universe
+          sudo add-apt-repository multiverse
+          sudo apt update
+          sudo apt install -y \
+            build-essential \
+            cmake \
+            ninja-build \
+            ccache \
+            python3-pip \
+            qtbase5-dev \
+            qt6-base-dev \
+            qt6-mqtt-dev \
+            qt6-tools-dev \
+            qt6-tools-dev-tools \
+            libssl-dev \
+            git \
+            unzip
+
+          python3 -m pip install --upgrade pip aqtinstall
+      
+      - name: Install Qt 6.8.2 and modules
+        run: |
+          aqt install-qt linux desktop 6.8.2 gcc_64 \
+            --modules qtwebsockets qtserialbus qtserialport \
+            --outputdir ${{ github.workspace }}/Qt
+
+      - name: Install Qt6Mqtt manually
+        run: |
+          git clone https://github.com/qt/qtmqtt.git
+          cd qtmqtt
+          git checkout 6.8.2
+          mkdir build && cd build
+          ${{ github.workspace }}/Qt/6.8.2/gcc_64/bin/qt-configure-module ..
+          cmake --build . --parallel
+          sudo cmake --install .
+
+      - name: Set PULSE_VERSION in CMakeLists.txt before building
+        if: startsWith(github.ref, 'refs/tags/') && env.SEMVER_VALID == 'true'
+        run: |
+          SW_VERSION="${{ github.ref_name }}"
+          SW_VERSION_DROPPED_V=${SW_VERSION#v}
+          sed -i -E "s/set\(PULSE_VERSION .*?\)/set(PULSE_VERSION \"${SW_VERSION_DROPPED_V}\")/" pulse/CMakeLists.txt
+          cat pulse/CMakeLists.txt
+
+      - name: Configure CMake
+        run: |
+          cmake -S . -B build \
+            -G Ninja \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_PREFIX_PATH="${{ github.workspace }}/Qt/6.8.2/gcc_64" \
+            -DOPENSSL_ROOT_DIR=/usr
+
+      - name: Build
+        run: cmake --build build --target all --parallel
+
+      - name: Run Tests
+        run: ctest --test-dir build --output-on-failure
+      
