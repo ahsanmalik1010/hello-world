@@ -22,8 +22,8 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ github.ref }}
-          submodules: recursive
-          token: ${{ secrets.CI_PULSE_TOKEN }}
+          # submodules: recursive
+          # token: ${{ secrets.CI_PULSE_TOKEN }}
 
       - uses: actions/setup-python@v5
         with:
