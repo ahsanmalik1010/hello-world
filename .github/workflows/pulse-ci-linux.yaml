@@ -67,42 +67,28 @@ jobs:
       #     aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       #     aws-region: ${{ env.AWS_REGION }}
 
-      - name: Install build dependencies
+      - name: Install dependencies
         run: |
-          sudo add-apt-repository universe
-          sudo add-apt-repository multiverse
           sudo apt update
-          sudo apt install -y \
-            build-essential \
-            cmake \
-            ninja-build \
-            ccache \
-            python3-pip \
-            qtbase5-dev \
-            qt6-base-dev \
-            qt6-mqtt-dev \
-            qt6-tools-dev \
-            qt6-tools-dev-tools \
-            libssl-dev \
-            git \
-            unzip
+          sudo apt install -y cmake ninja-build p7zip-full python3-pip git build-essential ccache
 
-          python3 -m pip install --upgrade pip aqtinstall
-      
-      - name: Install Qt 6.8.2 and modules
+      - name: Install aqtinstall and QtIFW
         run: |
-          aqt install-qt linux desktop 6.8.2 gcc_64 \
-            --modules qtwebsockets qtserialbus qtserialport \
-            --outputdir ${{ github.workspace }}/Qt
+          pip3 install --upgrade aqtinstall
+          aqt install-tool linux desktop tools_ifw qt.tools.ifw.47 --outputdir ${{ github.workspace }}
 
-      - name: Install Qt6Mqtt manually
+      - name: Install Qt6 and extra modules
+        run: |
+          aqt install-qt linux desktop 6.8.2 gcc_64 --outputdir ${{ github.workspace }}/Qt --modules qtwebsockets qtserialbus qtserialport qtcharts
+
+      - name: Install Qt6Mqtt
         run: |
           git clone https://github.com/qt/qtmqtt.git
           cd qtmqtt
           git checkout 6.8.2
           mkdir build && cd build
-          ${{ github.workspace }}/Qt/6.8.2/gcc_64/bin/qt-configure-module ..
-          cmake --build . --parallel
+          ${{ github.workspace }}/Qt/6.8.2/gcc_64/bin/qt-cmake ..
+          cmake --build .
           sudo cmake --install .
 
       - name: Set PULSE_VERSION in CMakeLists.txt before building
