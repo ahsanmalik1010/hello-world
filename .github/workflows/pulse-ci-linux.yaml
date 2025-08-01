@@ -79,6 +79,10 @@ jobs:
 
       - name: Install Qt6 and extra modules
         run: |
+          aqt list-qt linux desktop --arch 6.8.2
+          aqt list-qt linux desktop --arch 6.7.1
+          aqt list-qt linux desktop --arch 6.6.3
+
           aqt install-qt linux desktop 6.7.1 gcc_64 --outputdir ${{ github.workspace }}/Qt --modules qtwebsockets qtserialbus qtserialport qtcharts
 
       - name: Install Qt6Mqtt
