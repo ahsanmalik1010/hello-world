@@ -80,18 +80,15 @@ jobs:
       - name: Install Qt6 and extra modules
         run: |
           aqt list-qt linux desktop --arch 6.8.2
-          aqt list-qt linux desktop --arch 6.7.1
-          aqt list-qt linux desktop --arch 6.6.3
-
-          aqt install-qt linux desktop 6.7.1 gcc_64 --outputdir ${{ github.workspace }}/Qt --modules qtwebsockets qtserialbus qtserialport qtcharts
+          aqt install-qt linux desktop 6.8.2 linux_gcc_64 --outputdir ${{ github.workspace }}/Qt --modules qtwebsockets qtserialbus qtserialport qtcharts
 
       - name: Install Qt6Mqtt
         run: |
           git clone https://github.com/qt/qtmqtt.git
           cd qtmqtt
-          git checkout 6.7.1
+          git checkout 6.8.2
           mkdir build && cd build
-          ${{ github.workspace }}/Qt/6.7.1/gcc_64/bin/qt-cmake ..
+          ${{ github.workspace }}/Qt/6.8.2/linux_gcc_64/bin/qt-cmake ..
           cmake --build .
           sudo cmake --install .
 
@@ -115,7 +112,7 @@ jobs:
             -G Ninja \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
-            -DCMAKE_PREFIX_PATH="${{ github.workspace }}/Qt/6.7.1/gcc_64" \
+            -DCMAKE_PREFIX_PATH="${{ github.workspace }}/Qt/6.8.2/linux_gcc_64" \
             -DOPENSSL_ROOT_DIR=/usr
 
       - name: Build
@@ -129,7 +126,7 @@ jobs:
           python3 ${{ github.workspace }}/pulse/installer/makeinstaller.py \
             --install-prefix "${{ github.workspace }}/installprefix" \
             --qt-directory "${{ github.workspace }}/Qt" \
-            --qt-version "6.7.1" \
+            --qt-version "6.8.2" \
             --qtifw-directory "${{ github.workspace }}/Tools/QtInstallerFramework/4.7" \
             --openssl-directory "/usr"
 
