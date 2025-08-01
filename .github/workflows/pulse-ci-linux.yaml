@@ -88,7 +88,7 @@ jobs:
           cd qtmqtt
           git checkout 6.8.2
           mkdir build && cd build
-          ${{ github.workspace }}/Qt/6.8.2/linux_gcc_64/bin/qt-cmake ..
+          ${{ github.workspace }}/Qt/6.8.2/gcc_64/bin/qt-cmake ..
           cmake --build .
           sudo cmake --install .
 
@@ -112,7 +112,7 @@ jobs:
             -G Ninja \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
-            -DCMAKE_PREFIX_PATH="${{ github.workspace }}/Qt/6.8.2/linux_gcc_64" \
+            -DCMAKE_PREFIX_PATH="${{ github.workspace }}/Qt/6.8.2/gcc_64" \
             -DOPENSSL_ROOT_DIR=/usr
 
       - name: Build
